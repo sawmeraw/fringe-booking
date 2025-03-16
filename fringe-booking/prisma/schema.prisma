@@ -1,0 +1,92 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Event {
+  id             String   @id @default(uuid())
+  title          String
+  description    String   @db.Text
+  bannerImageUrl String?
+  venue          String
+  address        String
+  city           String
+  state          String?
+  country        String
+  zipCode        String?
+  startDate      DateTime
+  endDate        DateTime
+  startTime      String
+  EndTime        String
+  timezone       String   @default("UTC")
+  category       String
+  tags           String[]
+
+  price          Decimal @db.Decimal(10, 2)
+  currency       String  @default("AUD")
+  capacity       Int
+  availableSeats Int
+  isPublished    Boolean @default(false)
+  isFeatured     Boolean @default(false)
+  isSoldOut      Boolean @default(false)
+  isCancelled    Boolean @default(false)
+
+  createdById String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // tickets  Tickets[]
+  // bookings Bookings[]
+
+  @@index([startDate])
+  @@index([category])
+  @@index([isPublished])
+  @@index([isFeatured])
+}
+
+// model User {
+//   id       String     @id @default(uuid())
+//   email    String
+//   name     String
+//   role     String
+//   events   Events[]
+//   bookings Bookings[]
+//   createdAt DateTime @default(now())
+//   updatedAt DateTime @default(now())
+// }
+
+// model Tickets {
+//   id                String     @id @default(uuid())
+//   eventId           String     @unique
+//   event             Events     @relation(fields: [eventId], references: [id])
+//   type              String
+//   price             Decimal    @db.Decimal(10, 2)
+//   quantity          Int
+//   availableQuantity Int
+//   description       String?
+//   bookings          Bookings[]
+//   createdAt         DateTime   @default(now())
+//   updatedAt         DateTime   @updatedAt
+
+//   @@index([eventId])
+// }
+
+// model Bookings {
+//   id       String  @default(uuid())
+//   userId   String
+//   user     User    @relation(fields: [userId], references: [id])
+//   eventId  String
+//   event    Events  @relation(fields: [eventId], references: [id])
+//   ticketId String
+//   Tticket  Tickets @relation(fields: [ticketId], references: [id])
+// }
