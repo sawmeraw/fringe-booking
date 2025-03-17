@@ -18,6 +18,7 @@ model User {
 
   Reviews Review[]
   Tickets Ticket[]
+  Order   Order[]
 
   @@map("Users")
 }
@@ -43,14 +44,15 @@ model Event {
 
   tags String[]
 
-  unitPrice      Decimal @db.Decimal(10, 2)
-  currency       String  @default("AUD")
-  capacity       Int
-  availableSeats Int
-  isPublished    Boolean @default(false)
-  isFeatured     Boolean @default(false)
-  isSoldOut      Boolean @default(false)
-  isCancelled    Boolean @default(false)
+  unitPrice           Decimal  @db.Decimal(10, 2)
+  currency            String   @default("AUD")
+  capacityTotal       Int
+  isTicketLimited     Boolean? @default(false)
+  ticketLimitQuantity Int
+  isPublished         Boolean  @default(false)
+  isFeatured          Boolean  @default(false)
+  isSoldOut           Boolean  @default(false)
+  isCancelled         Boolean  @default(false)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -74,21 +76,26 @@ model EventPriceTier {
 
   Event      Event     @relation(fields: [eventId], references: [id])
   PriceTiers PriceTier @relation(fields: [priceTierId], references: [id])
+  Ticket     Ticket[]
 
   @@index([eventId, priceTierId])
   @@map("EventPriceTiers")
 }
 
 model PriceTier {
-  id              String  @id @default(uuid())
-  name            String
-  metaDescription String?
-  maxPrice        Decimal @db.Decimal(10, 2)
-  minPrice        Decimal @db.Decimal(10, 2)
+  id                 String  @id @default(uuid())
+  name               String
+  metaDescription    String?
+  seatingDescription String?
+  totalCapacity      Int
+  seatsAvailable     Int
+  maxPrice           Decimal @db.Decimal(10, 2)
+  minPrice           Decimal @db.Decimal(10, 2)
 
   EventPriceTiers EventPriceTier[]
+  Tickets         Ticket[]
 
-  @@map("PriceTier")
+  @@map("PriceTiers")
 }
 
 model Review {
@@ -120,28 +127,44 @@ model Venue {
 }
 
 model Ticket {
-  id           String       @id @default(uuid())
-  eventId      String
-  userId       String
-  priceTierId  String?
-  purchaseDate DateTime     @default(now())
-  seatNumber   String?
-  isRefunded   Boolean
-  qrCode       String?
-  status       TicketStatus @default(VALID)
+  id               String       @id @default(uuid())
+  eventId          String
+  userId           String?
+  orderId          String
+  eventPriceTierId String
+  priceTierId      String
+  purchaseDate     DateTime     @default(now())
+  quantity         Int?
+  isRefunded       Boolean
+  qrCode           String?
+  status           TicketStatus @default(VALID)
 
-  Event Event @relation(fields: [eventId], references: [id])
-  User  User  @relation(fields: [userId], references: [id])
+  Event          Event          @relation(fields: [eventId], references: [id])
+  User           User?          @relation(fields: [userId], references: [id])
+  Order          Order          @relation(fields: [orderId], references: [id])
+  EventPriceTier EventPriceTier @relation(fields: [eventPriceTierId], references: [id])
+  PriceTier      PriceTier      @relation(fields: [priceTierId], references: [id])
 
   @@index([eventId])
-  @@index([userId])
+  @@index([orderId])
+  @@index([eventPriceTierId])
   @@map("Tickets")
 }
 
 model Order {
-  id      String @id @default(uuid())
-  eventId String
+  id          String   @id @default(uuid())
+  eventId     String
+  userId      String?
+  totalAmount Decimal  @db.Decimal(10, 2)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  isCancelled Boolean  @default(false)
+  isRefunded  Boolean  @default(false)
 
+  User    User?    @relation(fields: [userId], references: [id])
+  Tickets Ticket[]
+
+  @@index([userId])
   @@map("Orders")
 }
 
