@@ -13,26 +13,37 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Event {
-  id             String   @id @default(uuid())
-  title          String
-  description    String   @db.Text
-  bannerImageUrl String?
-  venue          String
-  address        String
-  city           String
-  state          String?
-  country        String
-  zipCode        String?
-  startDate      DateTime
-  endDate        DateTime
-  startTime      String
-  EndTime        String
-  timezone       String   @default("UTC")
-  category       String
-  tags           String[]
+model User {
+  id String @id @default(uuid())
 
-  price          Decimal @db.Decimal(10, 2)
+  Reviews Review[]
+  Tickets Ticket[]
+
+  @@map("Users")
+}
+
+model Event {
+  id          String @id @default(uuid())
+  venueId     String
+  genreId     String
+  disountId   String
+  createdById String
+
+  title            String
+  metaDescription  String   @db.Text
+  eventDescription String   @db.Text
+  featuredPersons  String[]
+  bannerImageUrl   String?
+
+  startDate     DateTime
+  endDate       DateTime
+  startTime     String
+  endTime       String
+  contentRating ContentRating
+
+  tags String[]
+
+  unitPrice      Decimal @db.Decimal(10, 2)
   currency       String  @default("AUD")
   capacity       Int
   availableSeats Int
@@ -41,52 +52,128 @@ model Event {
   isSoldOut      Boolean @default(false)
   isCancelled    Boolean @default(false)
 
-  createdById String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  // tickets  Tickets[]
-  // bookings Bookings[]
+  EventPriceTiers EventPriceTier[]
+  Reviews         Review[]
+  Venue           Venue            @relation(fields: [venueId], references: [id])
+  Tickets         Ticket[]
+  EventGenre      EventGenre[]
 
   @@index([startDate])
-  @@index([category])
   @@index([isPublished])
   @@index([isFeatured])
+  @@map("Events")
 }
 
-// model User {
-//   id       String     @id @default(uuid())
-//   email    String
-//   name     String
-//   role     String
-//   events   Events[]
-//   bookings Bookings[]
-//   createdAt DateTime @default(now())
-//   updatedAt DateTime @default(now())
-// }
+model EventPriceTier {
+  id          String @id @default(uuid())
+  eventId     String
+  priceTierId String
 
-// model Tickets {
-//   id                String     @id @default(uuid())
-//   eventId           String     @unique
-//   event             Events     @relation(fields: [eventId], references: [id])
-//   type              String
-//   price             Decimal    @db.Decimal(10, 2)
-//   quantity          Int
-//   availableQuantity Int
-//   description       String?
-//   bookings          Bookings[]
-//   createdAt         DateTime   @default(now())
-//   updatedAt         DateTime   @updatedAt
+  Event      Event     @relation(fields: [eventId], references: [id])
+  PriceTiers PriceTier @relation(fields: [priceTierId], references: [id])
 
-//   @@index([eventId])
-// }
+  @@index([eventId, priceTierId])
+  @@map("EventPriceTiers")
+}
 
-// model Bookings {
-//   id       String  @default(uuid())
-//   userId   String
-//   user     User    @relation(fields: [userId], references: [id])
-//   eventId  String
-//   event    Events  @relation(fields: [eventId], references: [id])
-//   ticketId String
-//   Tticket  Tickets @relation(fields: [ticketId], references: [id])
-// }
+model PriceTier {
+  id              String  @id @default(uuid())
+  name            String
+  metaDescription String?
+  maxPrice        Decimal @db.Decimal(10, 2)
+  minPrice        Decimal @db.Decimal(10, 2)
+
+  EventPriceTiers EventPriceTier[]
+
+  @@map("PriceTier")
+}
+
+model Review {
+  id      String @id @default(uuid())
+  eventId String
+
+  title       String?
+  description String?
+  rating      Int?
+  userId      String
+
+  Event Event @relation(fields: [eventId], references: [id])
+  User  User  @relation(fields: [userId], references: [id])
+
+  @@map("Reviews")
+}
+
+model Venue {
+  id            String @id @default(uuid())
+  name          String
+  streetAddress String
+  city          String
+  state         String
+  zipCode       String
+
+  Events Event[]
+
+  @@map("Venues")
+}
+
+model Ticket {
+  id           String       @id @default(uuid())
+  eventId      String
+  userId       String
+  priceTierId  String?
+  purchaseDate DateTime     @default(now())
+  seatNumber   String?
+  isRefunded   Boolean
+  qrCode       String?
+  status       TicketStatus @default(VALID)
+
+  Event Event @relation(fields: [eventId], references: [id])
+  User  User  @relation(fields: [userId], references: [id])
+
+  @@index([eventId])
+  @@index([userId])
+  @@map("Tickets")
+}
+
+model Order {
+  id      String @id @default(uuid())
+  eventId String
+
+  @@map("Orders")
+}
+
+model EventGenre {
+  id      String @id @default(uuid())
+  eventId String
+  genreId String
+
+  Event Event @relation(fields: [eventId], references: [id])
+  Genre Genre @relation(fields: [genreId], references: [id])
+
+  @@map("EventGenres")
+}
+
+model Genre {
+  id          String       @id @default(uuid())
+  Name        String
+  Description String
+  EventGenre  EventGenre[]
+
+  @@map("Genres")
+}
+
+enum TicketStatus {
+  VALID
+  EXPIRED
+}
+
+enum ContentRating {
+  G
+  M
+  PG
+  MA15
+  R18PLUS
+}
