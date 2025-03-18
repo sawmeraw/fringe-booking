@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -14,189 +8,218 @@ datasource db {
 }
 
 model User {
-  id String @id @default(uuid())
-
-  Reviews Review[]
-  Tickets Ticket[]
-  Order   Order[]
-
-  @@map("Users")
-}
-
-model Event {
-  id          String @id @default(uuid())
-  venueId     String
-  genreId     String
-  disountId   String
-  createdById String
-
-  title            String
-  metaDescription  String   @db.Text
-  eventDescription String   @db.Text
-  featuredPersons  String[]
-  bannerImageUrl   String?
-
-  startDate     DateTime
-  endDate       DateTime
-  startTime     String
-  endTime       String
-  contentRating ContentRating
-
-  tags String[]
-
-  unitPrice           Decimal  @db.Decimal(10, 2)
-  currency            String   @default("AUD")
-  capacityTotal       Int
-  isTicketLimited     Boolean? @default(false)
-  ticketLimitQuantity Int
-  isPublished         Boolean  @default(false)
-  isFeatured          Boolean  @default(false)
-  isSoldOut           Boolean  @default(false)
-  isCancelled         Boolean  @default(false)
-
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  firstName String
+  lastName  String
+  phone     String?
+  isActive  Boolean  @default(true)
+  isAdmin   Boolean  @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  EventPriceTiers EventPriceTier[]
-  Reviews         Review[]
-  Venue           Venue            @relation(fields: [venueId], references: [id])
-  Tickets         Ticket[]
-  EventGenre      EventGenre[]
-
-  @@index([startDate])
-  @@index([isPublished])
-  @@index([isFeatured])
-  @@map("Events")
+  orders         Order[]
+  paymentMethods PaymentMethod[]
+  reviews        Review[]
 }
 
-model EventPriceTier {
-  id          String @id @default(uuid())
-  eventId     String
-  priceTierId String
+model Event {
+  id              String   @id @default(uuid())
+  title           String
+  metaDescription String   @db.Text
+  description     String   @db.Text
+  durationMinutes Int
+  featuredImage   String?
+  bannerImageUrl  String
+  contentRating   String? // G, PG, M, MA15+, R18+, etc.
+  isActive        Boolean  @default(true)
+  isPromoted      Boolean  @default(false)
+  isSoldOut       Boolean  @default(false)
+  hasSpecialOffer Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  createdBy       String
 
-  Event      Event     @relation(fields: [eventId], references: [id])
-  PriceTiers PriceTier @relation(fields: [priceTierId], references: [id])
-  Ticket     Ticket[]
-
-  @@index([eventId, priceTierId])
-  @@map("EventPriceTiers")
-}
-
-model PriceTier {
-  id                 String  @id @default(uuid())
-  name               String
-  metaDescription    String?
-  seatingDescription String?
-  totalCapacity      Int
-  seatsAvailable     Int
-  maxPrice           Decimal @db.Decimal(10, 2)
-  minPrice           Decimal @db.Decimal(10, 2)
-
-  EventPriceTiers EventPriceTier[]
-  Tickets         Ticket[]
-
-  @@map("PriceTiers")
-}
-
-model Review {
-  id      String @id @default(uuid())
-  eventId String
-
-  title       String?
-  description String?
-  rating      Int?
-  userId      String
-
-  Event Event @relation(fields: [eventId], references: [id])
-  User  User  @relation(fields: [userId], references: [id])
-
-  @@map("Reviews")
-}
-
-model Venue {
-  id            String @id @default(uuid())
-  name          String
-  streetAddress String
-  city          String
-  state         String
-  zipCode       String
-
-  Events Event[]
-
-  @@map("Venues")
-}
-
-model Ticket {
-  id               String       @id @default(uuid())
-  eventId          String
-  userId           String?
-  orderId          String
-  eventPriceTierId String
-  priceTierId      String
-  purchaseDate     DateTime     @default(now())
-  quantity         Int?
-  isRefunded       Boolean
-  qrCode           String?
-  status           TicketStatus @default(VALID)
-
-  Event          Event          @relation(fields: [eventId], references: [id])
-  User           User?          @relation(fields: [userId], references: [id])
-  Order          Order          @relation(fields: [orderId], references: [id])
-  EventPriceTier EventPriceTier @relation(fields: [eventPriceTierId], references: [id])
-  PriceTier      PriceTier      @relation(fields: [priceTierId], references: [id])
-
-  @@index([eventId])
-  @@index([orderId])
-  @@index([eventPriceTierId])
-  @@map("Tickets")
-}
-
-model Order {
-  id          String   @id @default(uuid())
-  eventId     String
-  userId      String?
-  totalAmount Decimal  @db.Decimal(10, 2)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  isCancelled Boolean  @default(false)
-  isRefunded  Boolean  @default(false)
-
-  User    User?    @relation(fields: [userId], references: [id])
-  Tickets Ticket[]
-
-  @@index([userId])
-  @@map("Orders")
-}
-
-model EventGenre {
-  id      String @id @default(uuid())
-  eventId String
-  genreId String
-
-  Event Event @relation(fields: [eventId], references: [id])
-  Genre Genre @relation(fields: [genreId], references: [id])
-
-  @@map("EventGenres")
+  genres   GenreOnEvent[]
+  sessions Session[]
+  reviews  Review[]
 }
 
 model Genre {
-  id          String       @id @default(uuid())
-  Name        String
-  Description String
-  EventGenre  EventGenre[]
+  id          String  @id @default(uuid())
+  name        String  @unique
+  description String?
 
-  @@map("Genres")
+  events GenreOnEvent[]
 }
 
-enum TicketStatus {
-  VALID
-  EXPIRED
+model GenreOnEvent {
+  event   Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  eventId String
+  genre   Genre  @relation(fields: [genreId], references: [id], onDelete: Cascade)
+  genreId String
+
+  @@id([eventId, genreId])
 }
 
-enum ContentRating {
-  G
-  M
-  PG
-  MA15
-  R18PLUS
+model Venue {
+  id               String  @id @default(uuid())
+  name             String
+  address          String
+  city             String
+  state            String
+  zipCode          String
+  country          String
+  capacity         Int
+  hasAccessibility Boolean @default(false)
+  hasParking       Boolean @default(false)
+  hasFood          Boolean @default(false)
+  hasBeverages     Boolean @default(false)
+  latitude         Float?
+  longitude        Float?
+  contactPhone     String?
+  contactEmail     String?
+  website          String?
+
+  sessions Session[]
+}
+
+model Session {
+  id              String   @id @default(uuid())
+  startDateTime   DateTime
+  endDateTime     DateTime
+  isActive        Boolean  @default(true)
+  isSoldOut       Boolean  @default(false)
+  hasLimitedSeats Boolean  @default(false)
+  remainingSeats  Int?
+
+  event   Event            @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  eventId String
+  venue   Venue            @relation(fields: [venueId], references: [id])
+  venueId String
+  tickets Ticket[]
+  pricing SessionPricing[]
+}
+
+model PriceCategory {
+  id                 String  @id @default(uuid())
+  name               String  @unique // Full price, BankSA Cardholder, Family, Companion Card, etc.
+  description        String?
+  requiresProof      Boolean @default(false)
+  maxTicketsPerOrder Int? // Optional limit for specific categories
+
+  sessionPricing SessionPricing[]
+}
+
+model SessionPricing {
+  id          String  @id @default(uuid())
+  price       Decimal @db.Decimal(10, 2)
+  isAvailable Boolean @default(true)
+
+  session         Session       @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  sessionId       String
+  priceCategory   PriceCategory @relation(fields: [priceCategoryId], references: [id])
+  priceCategoryId String
+  tickets         Ticket[]
+
+  @@unique([sessionId, priceCategoryId])
+}
+
+model Order {
+  id             String        @id @default(uuid())
+  orderNumber    String        @unique
+  totalAmount    Decimal       @db.Decimal(10, 2)
+  transactionFee Decimal       @default(4.80) @db.Decimal(10, 2)
+  status         OrderStatus   @default(PENDING)
+  paymentStatus  PaymentStatus @default(PENDING)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  user    User     @relation(fields: [userId], references: [id])
+  userId  String
+  tickets Ticket[]
+  payment Payment?
+}
+
+model Ticket {
+  id           String    @id @default(uuid())
+  ticketNumber String    @unique
+  qrCode       String?
+  isScanned    Boolean   @default(false)
+  scannedAt    DateTime?
+
+  order            Order          @relation(fields: [orderId], references: [id])
+  orderId          String
+  session          Session        @relation(fields: [sessionId], references: [id])
+  sessionId        String
+  pricing          SessionPricing @relation(fields: [sessionPricingId], references: [id])
+  sessionPricingId String
+}
+
+model Payment {
+  id            String        @id @default(uuid())
+  amount        Decimal       @db.Decimal(10, 2)
+  paymentMethod String // Credit Card, PayPal, etc.
+  transactionId String?
+  status        PaymentStatus @default(PENDING)
+  createdAt     DateTime      @default(now())
+
+  order   Order  @relation(fields: [orderId], references: [id])
+  orderId String @unique
+}
+
+model PaymentMethod {
+  id          String  @id @default(uuid())
+  type        String // Credit Card, PayPal, etc.
+  lastFour    String? // Last four digits of card
+  cardType    String? // Visa, Mastercard, etc.
+  expiryMonth Int?
+  expiryYear  Int?
+  isDefault   Boolean @default(false)
+
+  user   User   @relation(fields: [userId], references: [id])
+  userId String
+}
+
+model Review {
+  id        String   @id @default(uuid())
+  rating    Int // 1-5 stars
+  comment   String?
+  createdAt DateTime @default(now())
+
+  user    User   @relation(fields: [userId], references: [id])
+  userId  String
+  event   Event  @relation(fields: [eventId], references: [id])
+  eventId String
+
+  @@unique([userId, eventId])
+}
+
+model PromoCode {
+  id              String   @id @default(uuid())
+  code            String   @unique
+  description     String?
+  discountPercent Float?
+  discountAmount  Decimal? @db.Decimal(10, 2)
+  minOrderAmount  Decimal? @db.Decimal(10, 2)
+  maxUses         Int?
+  currentUses     Int      @default(0)
+  startDate       DateTime
+  endDate         DateTime
+  isActive        Boolean  @default(true)
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  CANCELED
+  REFUNDED
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
 }
